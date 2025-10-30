@@ -101,11 +101,11 @@ class Factura {
     // Listar facturas con información del vendedor
     public function listar($id_empresa) {
         $query = "SELECT f.*, 
-                         CONCAT(u.nombre, ' ', u.apellido) AS vendedor
-                  FROM factura f
-                  JOIN usuarios u ON f.id_vendedor = u.id
-                  WHERE f.id_empresa = :id_empresa
-                  ORDER BY f.fecha_emision DESC";
+                        CONCAT(u.nombre, ' ', u.apellido) AS vendedor
+                FROM facturas f
+                LEFT JOIN usuarios u ON f.id_vendedor = u.id  
+                WHERE f.id_empresa = :id_empresa
+                ORDER BY f.fecha_emision DESC";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(":id_empresa", $id_empresa);
         $stmt->execute();

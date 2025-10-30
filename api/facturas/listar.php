@@ -2,30 +2,20 @@
 header("Content-Type: application/json");
 header("Access-Control-Allow-Origin: *");
 
-include_once '../../config/conexion.php'; // ajusta la ruta según tu estructura
+include_once '../../config/conexion.php'; 
+include_once '../../controllers/FacturaController.php';
 
-$database = new Database();
-$db = $database->getConnection();
+// Instanciar el controlador (él se encarga de la conexión)
+$controller = new FacturaController(); 
 
-// Obtén el ID del usuario desde el parámetro GET
-$id_usuario = isset($_GET['id_usuario']) ? $_GET['id_usuario'] : null;
+// Obtener el ID de la empresa desde el parámetro GET (enviado desde Flutter)
+$id_empresa = isset($_GET['id_empresa']) ? $_GET['id_empresa'] : null;
 
-if ($id_usuario === null) {
-    echo json_encode(["success" => false, "message" => "ID de usuario no especificado"]);
+if ($id_empresa === null) {
+    echo json_encode(["success" => false, "message" => "ID de empresa no especificado"]);
     exit;
 }
 
-try {
-    // Consulta las facturas del usuario logueado
-    $query = "SELECT * FROM facturas WHERE id_usuario = :id_usuario";
-    $stmt = $db->prepare($query);
-    $stmt->bindParam(":id_usuario", $id_usuario);
-    $stmt->execute();
-
-    $facturas = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-    echo json_encode(["success" => true, "data" => $facturas]);
-} catch (PDOException $e) {
-    echo json_encode(["success" => false, "message" => "Error al obtener facturas: " . $e->getMessage()]);
-}
+// Llama al método del controlador, que internamente consulta las facturas filtradas por id_empresa.
+$controller->listarFacturas($id_empresa);
 ?>
