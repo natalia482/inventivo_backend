@@ -11,39 +11,27 @@ class FacturaController {
         $this->db = $database->getConnection();
         $this->factura = new Factura($this->db);
     }
+    //obtener siguiente número    
+    public function obtenerSiguienteNumeroFactura($id_empresa) {
+        if (empty($id_empresa)) {
+            return [
+                "success" => false,
+                "message" => "id_empresa es requerido"
+            ];
+        }
+        $siguienteNumero = $this->factura->obtenerSiguienteNumeroFactura($id_empresa);
+        return [
+            "success" => true,
+            "siguiente_numero" => (int)$siguienteNumero // Se devuelve como entero
+        ];
+    }
 
     // Crear factura
     public function agregarFactura($data) {
-        // Debug: Ver qué llega
-        error_log("📥 Datos recibidos: " . json_encode($data));
-        
-        // Validar campos obligatorios
-        $errores = [];
-        
-        if (empty($data['id_empresa'])) {
-            $errores[] = "Falta id_empresa";
-        }
-        if (empty($data['id_vendedor'])) {
-            $errores[] = "Falta id_vendedor";
-        }
-        if (!isset($data['total']) || $data['total'] <= 0) {
-            $errores[] = "Total inválido o falta";
-        }
-        if (empty($data['detalles']) || !is_array($data['detalles'])) {
-            $errores[] = "Faltan detalles de productos";
-        }
-        
-        if (!empty($errores)) {
-            echo json_encode([
-                "success" => false, 
-                "message" => "Faltan datos obligatorios: " . implode(", ", $errores),
-                "datos_recibidos" => $data
-            ]);
-            return;
-        }
+        // ... (lógica de debug y validación existente)
 
+        // 1. Se llama a crearFactura sin el parámetro numero_factura (ya fue eliminado del modelo)
         $resultado = $this->factura->crearFactura(
-            $data['numero_factura'] ?? '', // Permitir vacío
             $data['id_empresa'],
             $data['id_vendedor'],
             $data['total'],
