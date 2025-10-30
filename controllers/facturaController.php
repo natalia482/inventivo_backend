@@ -14,22 +14,36 @@ class FacturaController {
 
     // Crear factura
     public function agregarFactura($data) {
-        if (
-            empty($data['numero_factura']) ||
-            empty($data['id_empresa']) ||
-            empty($data['id_vendedor']) ||
-            empty($data['total']) ||
-            empty($data['detalles'])
-        ) {
+        // Debug: Ver qué llega
+        error_log("📥 Datos recibidos: " . json_encode($data));
+        
+        // Validar campos obligatorios
+        $errores = [];
+        
+        if (empty($data['id_empresa'])) {
+            $errores[] = "Falta id_empresa";
+        }
+        if (empty($data['id_vendedor'])) {
+            $errores[] = "Falta id_vendedor";
+        }
+        if (!isset($data['total']) || $data['total'] <= 0) {
+            $errores[] = "Total inválido o falta";
+        }
+        if (empty($data['detalles']) || !is_array($data['detalles'])) {
+            $errores[] = "Faltan detalles de productos";
+        }
+        
+        if (!empty($errores)) {
             echo json_encode([
                 "success" => false, 
-                "message" => "Faltan datos obligatorios"
+                "message" => "Faltan datos obligatorios: " . implode(", ", $errores),
+                "datos_recibidos" => $data
             ]);
             return;
         }
 
         $resultado = $this->factura->crearFactura(
-            $data['numero_factura'],
+            $data['numero_factura'] ?? '', // Permitir vacío
             $data['id_empresa'],
             $data['id_vendedor'],
             $data['total'],
