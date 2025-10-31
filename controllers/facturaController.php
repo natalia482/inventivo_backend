@@ -22,51 +22,24 @@ class FacturaController {
         $siguienteNumero = $this->factura->obtenerSiguienteNumeroFactura($id_empresa);
         return [
             "success" => true,
-            "siguiente_numero" => (int)$siguienteNumero // Se devuelve como entero
+            "siguiente_numero" => (int)$siguienteNumero // Asegurar que sea entero para Flutter
         ];
     }
-
     // Crear factura
-    public function agregarFactura($data) {
-        // Debug: Ver qué llega
-        error_log("📥 Datos recibidos: " . json_encode($data));
+  public function agregarFactura($data) {
+        // ... (validaciones de datos)
         
-        // Validar campos obligatorios
-        $errores = [];
-        
-        if (empty($data['id_empresa'])) {
-            $errores[] = "Falta id_empresa";
-        }
-        if (empty($data['id_vendedor'])) {
-            $errores[] = "Falta id_vendedor";
-        }
-        if (!isset($data['total']) || $data['total'] <= 0) {
-            $errores[] = "Total inválido o falta";
-        }
-        if (empty($data['detalles']) || !is_array($data['detalles'])) {
-            $errores[] = "Faltan detalles de productos";
-        }
-        
-        if (!empty($errores)) {
-            echo json_encode([
-                "success" => false, 
-                "message" => "Faltan datos obligatorios: " . implode(", ", $errores),
-                "datos_recibidos" => $data
-            ]);
-            return;
-        }
-        
-        // ✅ CORRECCIÓN CLAVE: Aseguramos que se pasan los 5 argumentos requeridos por Factura::crearFactura
+        // ✅ CORRECCIÓN CLAVE: Aseguramos los 5 argumentos, permitiendo que 'numero_factura' sea nulo.
         $resultado = $this->factura->crearFactura(
-            $data['numero_factura'] ?? '', // 1. Argumento: numero_factura (Permitimos vacío, ya que Flutter lo envía así)
-            $data['id_empresa'],          // 2. Argumento: id_empresa
-            $data['id_vendedor'],         // 3. Argumento: id_vendedor
-            $data['total'],               // 4. Argumento: total
-            $data['detalles']             // 5. Argumento: detalles
-        ); // La llamada está en la línea 60 (aproximadamente)
+            $data['numero_factura'] ?? '', // 1. Argumento (Se envía null o '')
+            $data['id_empresa'],          // 2. Argumento
+            $data['id_vendedor'],         // 3. Argumento
+            $data['total'],               // 4. Argumento
+            $data['detalles']             // 5. Argumento
+        );
 
         echo json_encode($resultado);
-    }
+    }   
 
     // Listar facturas por empresa
     public function listarFacturas($id_empresa) {

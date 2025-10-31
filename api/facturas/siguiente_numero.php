@@ -1,22 +1,26 @@
 <?php
-header("Access-Control-Allow-Origin: *");
-header("Access-Control-Allow-Methods: POST, OPTIONS");
-header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With");
-header("Content-Type: application/json");
-header("Access-Control-Allow-Origin: *");
-header("Content-Type: application/json");
-
 require_once '../../config/conexion.php';
-require_once '../../controllers/FacturaController.php';
+require_once '../../config/cors.php';
+require_once '../../controllers/facturaController.php';
 
-$db = (new Database())->getConnection();
-$controller = new FacturaController($db);
-
-if (isset($_GET['id_empresa'])) {
-    $id_empresa = intval($_GET['id_empresa']);
-    $response = $controller->obtenerSiguienteNumeroFactura($id_empresa);
-    echo json_encode($response);
-} else {
-    echo json_encode(["success" => false, "message" => "Falta el parámetro id_empresa"]);
+// Manejar preflight OPTIONS (si es necesario para navegadores)
+if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
+    http_response_code(200);
+    exit();
 }
+
+$controller = new FacturaController();
+
+// 1. Obtener el id_empresa del parámetro GET
+$id_empresa = isset($_GET['id_empresa']) ? intval($_GET['id_empresa']) : null;
+
+if (empty($id_empresa)) {
+    echo json_encode(["success" => false, "message" => "Falta el parámetro id_empresa."]);
+    exit;
+}
+
+// 2. Llamar al controlador y devolver la respuesta JSON
+$response = $controller->obtenerSiguienteNumeroFactura($id_empresa);
+
+echo json_encode($response);
 ?>

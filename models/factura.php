@@ -13,10 +13,32 @@ class Factura {
     public function __construct($db) {
         $this->conn = $db;
     }
-    public function crearFactura($numero_factura, $id_empresa, $id_vendedor, $total, $detalles) {
+    public function obtenerSiguienteNumeroFactura($id_empresa) {
+        // Busca el máximo numero_factura existente para la empresa y lo convierte a entero.
+        $query = "SELECT MAX(CAST(numero_factura AS UNSIGNED)) as ultimo_numero 
+                  FROM facturas 
+                  WHERE id_empresa = :id_empresa";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(":id_empresa", $id_empresa);
+        $stmt->execute();
+        $resultado = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        $ultimoNumero = $resultado['ultimo_numero'];
+        
+        // Si no hay facturas, empieza en 1. Si hay, sigue la secuencia.
+        return ($ultimoNumero === null || $ultimoNumero === 0) ? 1 : $ultimoNumero + 1;
+    }
+
+
+    public function crearFactura($numero_factura, $id_empresa, $id_vendedor, $total, $detalles) { 
         try {
             $this->conn->beginTransaction();
 
+            // 1. GENERACIÓN DEL NÚMERO DE FACTURA
+            $numero_final = $numero_factura;
+            if (empty($numero_factura)) {
+                $numero_final = $this->obtenerSiguienteNumeroFactura($id_empresa);
+            }
             // Validar stock antes de procesar (Lógica omitida por brevedad, asumimos es correcta)
             // ...
 
@@ -25,27 +47,28 @@ class Factura {
                       VALUES (:numero_factura, :id_empresa, :id_vendedor, :total, NOW())";
             $stmt = $this->conn->prepare($query);
             $stmt->execute([
-                ":numero_factura" => $numero_factura,
+                ":numero_factura" => $numero_final, // <-- Usamos el número generado
                 ":id_empresa" => $id_empresa,
                 ":id_vendedor" => $id_vendedor,
                 ":total" => $total
             ]);
             $idFactura = $this->conn->lastInsertId();
 
-            // Agregar detalles y descontar stock
+            // 3. Agregar detalles y descontar stock
             foreach ($detalles as $detalle) {
                 $this->agregarDetalle($idFactura, $detalle["id_producto"], $detalle["cantidad"], $detalle["precio_unitario"]);
             }
 
             $this->conn->commit();
-            return ["success" => true, "message" => "Factura creada exitosamente", "id_factura" => $idFactura];
+            // 4. Devolver el número generado
+            return ["success" => true, "message" => "Factura creada exitosamente", "id_factura" => $idFactura, "numero_factura" => strval($numero_final)];
 
         } catch (Exception $e) {
             $this->conn->rollBack();
-            return ["success" => false, "message" => $e->getMessage()];
+            // Esto captura el error SQL de duplicidad y lo devuelve a Flutter
+            return ["success" => false, "message" => "SQLSTATE[23000]: Fallo de integridad: " . $e->getMessage()];
         }
     }
-
     private function agregarDetalle($idFactura, $idProducto, $cantidad, $precioUnitario) {
         
         // ✅ CORRECCIÓN CLAVE: Se elimina 'subtotal' del INSERT INTO y VALUES.
