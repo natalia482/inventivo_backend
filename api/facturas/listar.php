@@ -1,6 +1,8 @@
 <?php
-header("Content-Type: application/json");
 header("Access-Control-Allow-Origin: *");
+header("Access-Control-Allow-Methods: POST, OPTIONS");
+header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With");
+header("Content-Type: application/json");
 
 include_once '../../config/conexion.php'; 
 include_once '../../controllers/FacturaController.php';

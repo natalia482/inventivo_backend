@@ -1,7 +1,7 @@
 <?php
 // config/cors.php
 header("Access-Control-Allow-Origin: *");
-header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
+header("Access-Control-Allow-Methods: GET, POST, OPTIONS, DELETE"); // <-- CORRECCIÓN CLAVE: Agregamos DELETE
 header("Access-Control-Allow-Headers: Content-Type, Authorization");
 
 // Manejar preflight (OPTIONS)

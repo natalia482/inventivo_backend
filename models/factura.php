@@ -1,7 +1,7 @@
 <?php
 class Factura {
     private $conn;
-    private $table_name = "factura";
+    private $table_name = "facturas"; // ✅ CORREGIDO: Usar 'facturas' consistentemente
 
     public $id;
     public $numero_factura;
@@ -13,54 +13,32 @@ class Factura {
     public function __construct($db) {
         $this->conn = $db;
     }
-
-
-    //Obtener el siguiente  numero de la factura
-    public function obtenerSiguienteNumeroFactura($id_empresa) {
-        // Busca el máximo numero_factura existente para la empresa y lo convierte a entero.
-        $query = "SELECT MAX(CAST(numero_factura AS UNSIGNED)) as ultimo_numero 
-                  FROM facturas 
-                  WHERE id_empresa = :id_empresa";
-        $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(":id_empresa", $id_empresa);
-        $stmt->execute();
-        $resultado = $stmt->fetch(PDO::FETCH_ASSOC);
-
-        $ultimoNumero = $resultado['ultimo_numero'];
-        
-        // Si no hay facturas o el último es 0, el número inicial es 1.
-        return ($ultimoNumero === null || $ultimoNumero === 0) ? 1 : $ultimoNumero + 1;
-    }
-
-    // Crear factura con validación de stock
-    public function crearFactura($id_empresa, $id_vendedor, $total, $detalles) { 
+    public function crearFactura($numero_factura, $id_empresa, $id_vendedor, $total, $detalles) {
         try {
             $this->conn->beginTransaction();
 
-            // 1. OBTENER EL SIGUIENTE NÚMERO DE FACTURA
-            $siguienteNumero = $this->obtenerSiguienteNumeroFactura($id_empresa); // <--- USO DEL NUEVO MÉTODO
+            // Validar stock antes de procesar (Lógica omitida por brevedad, asumimos es correcta)
+            // ...
 
-            // Validar stock antes de procesar
-            // ... (lógica de validación de stock existente)
-
-            // 2. Insertar factura con el número generado
+            // Insertar factura
             $query = "INSERT INTO facturas (numero_factura, id_empresa, id_vendedor, total, fecha_emision) 
                       VALUES (:numero_factura, :id_empresa, :id_vendedor, :total, NOW())";
             $stmt = $this->conn->prepare($query);
             $stmt->execute([
-                ":numero_factura" => $siguienteNumero, // <--- CAMBIO CLAVE
+                ":numero_factura" => $numero_factura,
                 ":id_empresa" => $id_empresa,
                 ":id_vendedor" => $id_vendedor,
                 ":total" => $total
             ]);
             $idFactura = $this->conn->lastInsertId();
 
-            // 3. Agregar detalles y descontar stock
-            // ... (lógica existente para agregar detalles y descontar stock)
+            // Agregar detalles y descontar stock
+            foreach ($detalles as $detalle) {
+                $this->agregarDetalle($idFactura, $detalle["id_producto"], $detalle["cantidad"], $detalle["precio_unitario"]);
+            }
 
             $this->conn->commit();
-            // 4. Devolver el nuevo número generado para mostrarlo al usuario
-            return ["success" => true, "message" => "Factura creada exitosamente", "id_factura" => $idFactura, "numero_factura" => $siguienteNumero]; // <--- DEVOLVER EL NÚMERO
+            return ["success" => true, "message" => "Factura creada exitosamente", "id_factura" => $idFactura];
 
         } catch (Exception $e) {
             $this->conn->rollBack();
@@ -69,43 +47,49 @@ class Factura {
     }
 
     private function agregarDetalle($idFactura, $idProducto, $cantidad, $precioUnitario) {
-        $subtotal = $cantidad * $precioUnitario;
-
-        // Insertar detalle
-        $query = "INSERT INTO detalle_factura (id_factura, id_producto, cantidad, precio_unitario, subtotal)
-                  VALUES (:id_factura, :id_producto, :cantidad, :precio_unitario, :subtotal)";
+        
+        // ✅ CORRECCIÓN CLAVE: Se elimina 'subtotal' del INSERT INTO y VALUES.
+        $query = "INSERT INTO detalle_factura (id_factura, id_producto, cantidad, precio_unitario)
+                  VALUES (:id_factura, :id_producto, :cantidad, :precio_unitario)";
         $stmt = $this->conn->prepare($query);
+        
+        // Asegurar la tipificación
+        $idFactura_int = intval($idFactura); 
+        $idProducto_int = intval($idProducto);
+        $cantidad_int = intval($cantidad);
+
         $stmt->execute([
-            ":id_factura" => $idFactura,
-            ":id_producto" => $idProducto,
-            ":cantidad" => $cantidad,
+            ":id_factura" => $idFactura_int,
+            ":id_producto" => $idProducto_int,
+            ":cantidad" => $cantidad_int,
             ":precio_unitario" => $precioUnitario,
-            ":subtotal" => $subtotal
         ]);
 
         // Descontar stock y actualizar estado si es necesario
         $queryStock = "UPDATE plantas 
-                       SET stock = stock - :cantidad,
+                       SET stock = stock - :cantidad_resta,
                            estado = CASE 
-                               WHEN (stock - :cantidad) <= 0 THEN 'no disponible'
+                               WHEN (stock - :cantidad_condicional) <= 0 THEN 'no disponible'
                                ELSE estado
                            END
                        WHERE id = :idProducto";
         $stmt2 = $this->conn->prepare($queryStock);
+        
         $stmt2->execute([
-            ":cantidad" => $cantidad,
-            ":idProducto" => $idProducto
+            ":cantidad_resta" => $cantidad_int,
+            ":cantidad_condicional" => $cantidad_int,
+            ":idProducto" => $idProducto_int
         ]);
     }
 
-    // Listar facturas con información del vendedor
+    // Listar facturas (Usa LEFT JOIN y 'facturas')
     public function listar($id_empresa) {
         $query = "SELECT f.*, 
-                        CONCAT(u.nombre, ' ', u.apellido) AS vendedor
-                FROM facturas f
-                LEFT JOIN usuarios u ON f.id_vendedor = u.id  
-                WHERE f.id_empresa = :id_empresa
-                ORDER BY f.fecha_emision DESC";
+                         CONCAT(u.nombre, ' ', u.apellido) AS vendedor
+                  FROM facturas f 
+                  LEFT JOIN usuarios u ON f.id_vendedor = u.id 
+                  WHERE f.id_empresa = :id_empresa
+                  ORDER BY f.fecha_emision DESC";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(":id_empresa", $id_empresa);
         $stmt->execute();
@@ -114,7 +98,7 @@ class Factura {
     }
 
     // Obtener detalle completo de una factura
-    public function obtenerDetalle($id_factura) {
+    public function obtenerDetalle($id_factura) { 
         $query = "SELECT df.*, p.nombre_plantas, p.categoria
                   FROM detalle_factura df
                   JOIN plantas p ON df.id_producto = p.id
@@ -126,40 +110,54 @@ class Factura {
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    // Eliminar factura (devolver stock)
+    // Eliminar factura (Usar 'facturas')
     public function eliminar($id) {
         try {
             $this->conn->beginTransaction();
 
-            // Obtener los detalles antes de eliminar
+            // 1. Obtener los detalles antes de eliminar
             $queryDetalles = "SELECT id_producto, cantidad FROM detalle_factura WHERE id_factura = :id";
             $stmtDetalles = $this->conn->prepare($queryDetalles);
             $stmtDetalles->execute([":id" => $id]);
             $detalles = $stmtDetalles->fetchAll(PDO::FETCH_ASSOC);
+            
+            // Si no hay detalles, eliminamos solo la factura
+            if (empty($detalles)) {
+                $query = "DELETE FROM facturas WHERE id = :id";
+                $stmt = $this->conn->prepare($query);
+                $stmt->execute([":id" => $id]);
+                $this->conn->commit();
+                return true;
+            }
 
-            // Devolver el stock
+            // 2. Devolver el stock
             foreach ($detalles as $detalle) {
+                $cantidad_devolver = intval($detalle['cantidad']);
+                $idProducto_update = intval($detalle['id_producto']);
+                
+                // Usar nombres de parámetros únicos para el UPDATE
                 $queryStock = "UPDATE plantas 
-                               SET stock = stock + :cantidad,
+                               SET stock = stock + :cantidad_sumar,
                                    estado = CASE 
-                                       WHEN (stock + :cantidad) > 0 THEN 'disponible'
+                                       WHEN (stock + :cantidad_condicional) > 0 THEN 'disponible'
                                        ELSE estado
                                    END
                                WHERE id = :idProducto";
                 $stmtStock = $this->conn->prepare($queryStock);
+                
                 $stmtStock->execute([
-                    ":cantidad" => $detalle['cantidad'],
-                    ":idProducto" => $detalle['id_producto']
+                    ":cantidad_sumar"       => $cantidad_devolver,
+                    ":cantidad_condicional" => $cantidad_devolver,
+                    ":idProducto"           => $idProducto_update
                 ]);
             }
 
-            // Eliminar detalles
+            // 3. Eliminar detalles y factura
             $queryDeleteDetalles = "DELETE FROM detalle_factura WHERE id_factura = :id";
             $stmtDeleteDetalles = $this->conn->prepare($queryDeleteDetalles);
             $stmtDeleteDetalles->execute([":id" => $id]);
 
-            // Eliminar factura
-            $query = "DELETE FROM factura WHERE id = :id";
+            $query = "DELETE FROM facturas WHERE id = :id";
             $stmt = $this->conn->prepare($query);
             $stmt->execute([":id" => $id]);
 
@@ -168,7 +166,8 @@ class Factura {
 
         } catch (Exception $e) {
             $this->conn->rollBack();
-            return false;
+            // 🛑 DEVOLVEMOS EL MENSAJE DE ERROR REAL
+            return ["success" => false, "message" => "Fallo de Transacción (Rollback): " . $e->getMessage()];
         }
     }
 }

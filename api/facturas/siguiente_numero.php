@@ -1,14 +1,16 @@
 <?php
-// Fichero: inventivo_backend/.../api/facturas/siguiente_numero.php
-
+header("Access-Control-Allow-Origin: *");
+header("Access-Control-Allow-Methods: POST, OPTIONS");
+header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With");
+header("Content-Type: application/json");
 header("Access-Control-Allow-Origin: *");
 header("Content-Type: application/json");
 
 require_once '../../config/conexion.php';
-require_once '../../controllers/facturaController.php';
+require_once '../../controllers/FacturaController.php';
 
 $db = (new Database())->getConnection();
-$controller = new FacturaController($db); // El constructor actualiza $this->db, así que pasarlo es seguro.
+$controller = new FacturaController($db);
 
 if (isset($_GET['id_empresa'])) {
     $id_empresa = intval($_GET['id_empresa']);
