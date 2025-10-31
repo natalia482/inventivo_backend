@@ -1,10 +1,7 @@
 <?php
-header("Access-Control-Allow-Origin: *");
-header("Access-Control-Allow-Methods: POST, OPTIONS");
-header("Access-Control-Allow-Headers: Content-Type");
-header("Content-Type: application/json; charset=UTF-8");
 
-include_once '../../config/conexion.php';
+include_once '../config/conexion.php';
+include_once '../config/cors.php';
 
 // Capturar el mensaje desde Flutter
 $data = json_decode(file_get_contents("php://input"), true);
