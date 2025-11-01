@@ -9,18 +9,22 @@ class Insumo {
     public $precio;
     public $medida;
     public $cantidad;
-    public $id_empresa;
+    public $id_sede; // Modificado
+    public $estado;
     public $fecha_registro;
 
     public function __construct($db) {
         $this->conn = $db;
+        $this->conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     }
 
-    // Crear insumo
+    // Crear insumo (ahora usa id_sede y calcula estado)
     public function registrar() {
+        $estado_calculado = (floatval($this->cantidad) > 0) ? 'DISPONIBLE' : 'NO DISPONIBLE';
+        
         $query = "INSERT INTO " . $this->table_name . " 
-                  (nombre_insumo, categoria, precio, medida, cantidad, id_empresa) 
-                  VALUES (:nombre_insumo, :categoria, :precio, :medida, :cantidad, :id_empresa)";
+                  (nombre_insumo, categoria, precio, medida, cantidad, id_sede, estado, fecha_registro) 
+                  VALUES (:nombre_insumo, :categoria, :precio, :medida, :cantidad, :id_sede, :estado, NOW())";
         $stmt = $this->conn->prepare($query);
 
         $stmt->bindParam(":nombre_insumo", $this->nombre_insumo);
@@ -28,26 +32,42 @@ class Insumo {
         $stmt->bindParam(":precio", $this->precio);
         $stmt->bindParam(":medida", $this->medida);
         $stmt->bindParam(":cantidad", $this->cantidad);
-        $stmt->bindParam(":id_empresa", $this->id_empresa);
+        $stmt->bindParam(":id_sede", $this->id_sede); // Modificado
+        $stmt->bindParam(":estado", $estado_calculado);
 
         return $stmt->execute();
     }
 
-    // Listar insumos por empresa
-    public function listar() {
-        $query = "SELECT * FROM " . $this->table_name . " WHERE id_empresa = :id_empresa ORDER BY fecha_registro DESC";
+    // Listar insumos por sede
+    public function listar($id_sede, $filtro = null) { // Modificado
+        $query = "SELECT * FROM " . $this->table_name . " WHERE id_sede = :id_sede"; // Modificado
+        
+        if ($filtro) {
+            $query .= " AND (nombre_insumo LIKE :filtro OR categoria LIKE :filtro)";
+        }
+        $query .= " ORDER BY fecha_registro DESC";
+        
         $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(":id_empresa", $this->id_empresa);
+        $stmt->bindParam(":id_sede", $id_sede); // Modificado
+        
+        if ($filtro) {
+             $likeFiltro = "%" . $filtro . "%";
+             $stmt->bindParam(':filtro', $likeFiltro);
+        }
+        
         $stmt->execute();
         return $stmt;
     }
 
-    // Actualizar insumo
+    // Actualizar insumo (ahora usa id_sede)
     public function actualizar() {
+        $estado_calculado = (floatval($this->cantidad) > 0) ? 'DISPONIBLE' : 'NO DISPONIBLE';
+
         $query = "UPDATE " . $this->table_name . "
                   SET nombre_insumo = :nombre_insumo, categoria = :categoria,
-                      precio = :precio, medida = :medida, cantidad = :cantidad
-                  WHERE id = :id";
+                      precio = :precio, medida = :medida, cantidad = :cantidad,
+                      estado = :estado
+                  WHERE id = :id AND id_sede = :id_sede"; // Modificado
         $stmt = $this->conn->prepare($query);
 
         $stmt->bindParam(":nombre_insumo", $this->nombre_insumo);
@@ -55,21 +75,19 @@ class Insumo {
         $stmt->bindParam(":precio", $this->precio);
         $stmt->bindParam(":medida", $this->medida);
         $stmt->bindParam(":cantidad", $this->cantidad);
+        $stmt->bindParam(":estado", $estado_calculado);
         $stmt->bindParam(":id", $this->id);
+        $stmt->bindParam(":id_sede", $this->id_sede); // Modificado
 
         return $stmt->execute();
     }
-
-    // Buscar insumo por nombre o categoría
-    public function buscar($keyword) {
-        $query = "SELECT * FROM " . $this->table_name . " 
-                  WHERE nombre_insumo LIKE :keyword OR categoria LIKE :keyword
-                  ORDER BY fecha_registro DESC";
+    
+    // Eliminar insumo (eliminación física)
+    public function eliminar($id) {
+        $query = "DELETE FROM " . $this->table_name . " WHERE id = :id";
         $stmt = $this->conn->prepare($query);
-        $keyword = "%{$keyword}%";
-        $stmt->bindParam(":keyword", $keyword);
-        $stmt->execute();
-        return $stmt;
+        $stmt->bindParam(":id", $id);
+        return $stmt->execute();
     }
 }
 ?>

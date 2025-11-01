@@ -1,77 +1,64 @@
 <?php
 header("Access-Control-Allow-Origin: *");
-header("Access-Control-Allow-Methods: GET, POST, OPTIONS, PUT, DELETE");
+header("Access-Control-Allow-Methods: POST, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With");
-header("Access-Control-Allow-Credentials: true");
+header("Content-Type: application/json; charset=UTF-8");
 
 include_once '../../config/conexion.php';
+include_once '../../models/insumo.php'; 
 
 $database = new Database();
 $db = $database->getConnection();
+$insumo = new Insumo($db);
 
-$data = $_POST;
+$data = $_POST; // Flutter envía la actualización como POST, no JSON
 
 $id = isset($data['id']) ? trim($data['id']) : null;
-$nombre_insumo = isset($data['nombre_insumo']) ? trim($data['nombre_insumo']) : null;
-$categoria = isset($data['categoria']) ? trim($data['categoria']) : null;
-$medida = isset($data['medida']) ? trim($data['medida']) : null;
-$precio = isset($data['precio']) ? trim($data['precio']) : null;
-$cantidad = isset($data['cantidad']) ? trim($data['cantidad']) : null;
+$id_sede = isset($data['id_sede']) ? trim($data['id_sede']) : null;
+$id_usuario = isset($data['id_usuario']) ? trim($data['id_usuario']) : null;
 
-// Validar campos obligatorios
-if (empty($id) || empty($nombre_insumo) || empty($categoria) || empty($medida) || empty($precio) || empty($cantidad)) {
-    echo json_encode(["success" => false, "message" => "Faltan datos obligatorios."]);
+if (empty($id) || empty($id_sede) || empty($id_usuario)) {
+    echo json_encode(["success" => false, "message" => "Faltan IDs de auditoría (id, id_sede, id_usuario)."]);
     exit;
 }
 
-// Obtener la empresa a la que pertenece el insumo
-$queryEmpresa = "SELECT id_empresa FROM insumos WHERE id = :id";
-$stmtEmpresa = $db->prepare($queryEmpresa);
-$stmtEmpresa->bindParam(":id", $id);
-$stmtEmpresa->execute();
+// Asignar datos al modelo
+$insumo->id = $id;
+$insumo->id_sede = $id_sede;
+$insumo->nombre_insumo = $data['nombre_insumo'] ?? '';
+$insumo->categoria = $data['categoria'] ?? '';
+$insumo->precio = $data['precio'] ?? 0;
+$insumo->medida = $data['medida'] ?? '';
+$insumo->cantidad = $data['cantidad'] ?? 0;
+// (El estado se calcula dentro del modelo)
 
-if ($stmtEmpresa->rowCount() == 0) {
-    echo json_encode(["success" => false, "message" => "No se encontró el insumo especificado."]);
-    exit;
-}
+try {
+    $db->beginTransaction();
 
-$empresa = $stmtEmpresa->fetch(PDO::FETCH_ASSOC);
-$id_empresa = $empresa['id_empresa'];
+    // 1. Actualizar el insumo
+    if (!$insumo->actualizar()) { // Asumiendo que actualizar() está en el modelo
+         throw new Exception("No se pudo actualizar el insumo o no se encontraron cambios.");
+    }
 
-// ✅ Validar si ya existe otro insumo con el mismo nombre en la misma empresa
-$checkQuery = "SELECT id FROM insumos 
-               WHERE nombre_insumo = :nombre_insumo 
-               AND id_empresa = :id_empresa 
-               AND id != :id";
+    // 2. REGISTRAR AUDITORÍA
+    $detalle_cambio = "Se actualizó el insumo: " . $insumo->nombre_insumo;
+    $queryAuditoria = "INSERT INTO auditoria_movimientos 
+                       (id_usuario, id_sede, tabla_afectada, id_registro_afectado, tipo_operacion, detalle_cambio)
+                       VALUES (:id_usuario, :id_sede, 'insumos', :id_registro, 'ACTUALIZAR', :detalle)";
+    
+    $stmtAuditoria = $db->prepare($queryAuditoria);
+    $stmtAuditoria->execute([
+        ':id_usuario' => $id_usuario,
+        ':id_sede' => $id_sede,
+        ':id_registro' => $id,
+        ':detalle' => $detalle_cambio
+    ]);
+    
+    $db->commit();
+    echo json_encode(["success" => true, "message" => "Insumo actualizado y auditado."]);
 
-$checkStmt = $db->prepare($checkQuery);
-$checkStmt->bindParam(":nombre_insumo", $nombre_insumo);
-$checkStmt->bindParam(":id_empresa", $id_empresa);
-$checkStmt->bindParam(":id", $id);
-$checkStmt->execute();
-
-if ($checkStmt->rowCount() > 0) {
-    echo json_encode(["success" => false, "message" => "Ya existe otro insumo con ese nombre en la empresa."]);
-    exit;
-}
-
-// ✅ Actualizar insumo
-$query = "UPDATE insumos 
-          SET nombre_insumo = :nombre_insumo, categoria = :categoria, medida = :medida, 
-              precio = :precio, cantidad = :cantidad 
-          WHERE id = :id";
-
-$stmt = $db->prepare($query);
-$stmt->bindParam(":nombre_insumo", $nombre_insumo);
-$stmt->bindParam(":categoria", $categoria);
-$stmt->bindParam(":medida", $medida);
-$stmt->bindParam(":precio", $precio);
-$stmt->bindParam(":cantidad", $cantidad);
-$stmt->bindParam(":id", $id);
-
-if ($stmt->execute()) {
-    echo json_encode(["success" => true, "message" => "Insumo actualizado correctamente."]);
-} else {
-    echo json_encode(["success" => false, "message" => "Error al actualizar el insumo."]);
+} catch (Exception $e) {
+    $db->rollBack();
+    echo json_encode(["success" => false, "message" => "Error en la transacción: " . $e->getMessage()]);
 }
 ?>

@@ -1,60 +1,67 @@
 <?php
-header("Access-Control-Allow-Origin: *");
-header("Access-Control-Allow-Methods: GET, POST, OPTIONS, PUT, DELETE");
-header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With");
-header("Access-Control-Allow-Credentials: true");
-header("Content-Type: application/json");
-
+require_once '../../../config/cors.php';
 include_once '../../../config/conexion.php';
 
 $database = new Database();
 $db = $database->getConnection();
+$db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
 $data = json_decode(file_get_contents("php://input"));
 
-// 🔹 Verificamos si llegaron los campos necesarios
-if (empty($data->id)) {
-    echo json_encode(["success" => false, "message" => "Falta el ID del trabajador."]);
+// ✅ Auditoría: Necesitamos id_usuario_creador y id_sede
+if (empty($data->id) || empty($data->id_usuario_creador) || empty($data->id_sede)) {
+    echo json_encode(["success" => false, "message" => "Falta el ID del trabajador o IDs de auditoría."]);
     exit;
 }
 
-// 🔹 Preparamos los campos que se van a actualizar
+$id = $data->id;
 $updateFields = [];
 $params = [];
 
-if (!empty($data->nombre)) {
-    $updateFields[] = "nombre = :nombre";
-    $params[':nombre'] = $data->nombre;
-}
-if (!empty($data->apellido)) {
-    $updateFields[] = "apellido = :apellido";
-    $params[':apellido'] = $data->apellido;
-}
-if (!empty($data->correo)) {
-    $updateFields[] = "correo = :correo";
-    $params[':correo'] = $data->correo;
-}
-if (!empty($data->password)) {
-    // 🔐 Se encripta la nueva contraseña
-    $updateFields[] = "password = :password";
-    $params[':password'] = password_hash($data->password, PASSWORD_BCRYPT);
-}
+// ... (Preparamos los campos a actualizar: nombre, apellido, correo, password, etc.)
 
-// 🔹 Si no hay campos para actualizar
 if (empty($updateFields)) {
     echo json_encode(["success" => false, "message" => "No hay campos para actualizar."]);
     exit;
 }
 
-// 🔹 Armamos la consulta SQL dinámica
-$query = "UPDATE usuarios SET " . implode(", ", $updateFields) . " WHERE id = :id AND rol = 'TRABAJADOR'";
+// Armamos la consulta SQL dinámica
+$query = "UPDATE usuarios SET " . implode(", ", $updateFields) . " WHERE id = :id";
 $stmt = $db->prepare($query);
-$params[':id'] = $data->id;
+$params[':id'] = $id;
 
-// 🔹 Ejecutamos
-if ($stmt->execute($params)) {
-    echo json_encode(["success" => true, "message" => "Datos del trabajador actualizados correctamente."]);
-} else {
-    echo json_encode(["success" => false, "message" => "Error al actualizar los datos del trabajador."]);
+try {
+    $db->beginTransaction();
+    
+    // 1. Ejecutar la actualización
+    $stmt->execute($params);
+    $rowsAffected = $stmt->rowCount();
+
+    // 2. REGISTRAR AUDITORÍA
+    if ($rowsAffected > 0) {
+        $detalle_cambio = "Datos actualizados para usuario ID: " . $id;
+        $queryAuditoria = "INSERT INTO auditoria_movimientos 
+                           (id_usuario, id_sede, tabla_afectada, id_registro_afectado, tipo_operacion, detalle_cambio)
+                           VALUES (:id_usuario, :id_sede, 'usuarios', :id_registro, 'ACTUALIZAR', :detalle)";
+        
+        $stmtAuditoria = $db->prepare($queryAuditoria);
+        $stmtAuditoria->execute([
+            ':id_usuario' => $data->id_usuario_creador, // ID del usuario que realizó la acción
+            ':id_sede' => $data->id_sede,
+            ':id_registro' => $id,
+            ':detalle' => $detalle_cambio
+        ]);
+        
+        $db->commit();
+        echo json_encode(["success" => true, "message" => "Datos del trabajador actualizados y auditados."]);
+
+    } else {
+        $db->commit(); // Commit aunque no haya cambios (la acción se completó)
+        echo json_encode(["success" => false, "message" => "No se encontró al trabajador o los datos eran iguales."]);
+    }
+
+} catch (PDOException $e) {
+    $db->rollBack();
+    echo json_encode(["success" => false, "message" => "Error en la base de datos: " . $e->getMessage()]);
 }
 ?>

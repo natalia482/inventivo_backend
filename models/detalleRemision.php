@@ -1,10 +1,10 @@
 <?php
-class DetalleFactura {
+class DetalleRemision {
     private $conn;
-    private $table_name = "detalle_factura";
+    private $table_name = "detalle_Remision";
 
     public $id;
-    public $id_factura;
+    public $id_Remision;
     public $id_producto;
     public $cantidad;
     public $precio_unitario;
@@ -16,10 +16,10 @@ class DetalleFactura {
 
     public function crear() {
         $query = "INSERT INTO " . $this->table_name . " 
-                  (id_factura, id_producto, cantidad, precio_unitario, subtotal)
-                  VALUES (:id_factura, :id_producto, :cantidad, :precio_unitario, :subtotal)";
+                  (id_Remision, id_producto, cantidad, precio_unitario, subtotal)
+                  VALUES (:id_Remision, :id_producto, :cantidad, :precio_unitario, :subtotal)";
         $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(':id_factura', $this->id_factura);
+        $stmt->bindParam(':id_Remision', $this->id_Remision);
         $stmt->bindParam(':id_producto', $this->id_producto);
         $stmt->bindParam(':cantidad', $this->cantidad);
         $stmt->bindParam(':precio_unitario', $this->precio_unitario);
@@ -27,10 +27,10 @@ class DetalleFactura {
         return $stmt->execute();
     }
 
-    public function listarPorFactura($id_factura) {
-        $query = "SELECT * FROM " . $this->table_name . " WHERE id_factura = :id_factura";
+    public function listarPorRemision($id_Remision) {
+        $query = "SELECT * FROM " . $this->table_name . " WHERE id_Remision = :id_Remision";
         $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(':id_factura', $id_factura);
+        $stmt->bindParam(':id_Remision', $id_Remision);
         $stmt->execute();
         return $stmt;
     }

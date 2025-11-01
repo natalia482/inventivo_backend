@@ -1,7 +1,7 @@
 <?php
 require_once '../../config/conexion.php';
 require_once '../../config/cors.php';
-require_once '../../controllers/facturaController.php';
+require_once '../../controllers/RemisionController.php';
 
 // Manejar preflight OPTIONS (si es necesario para navegadores)
 if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
@@ -9,7 +9,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
     exit();
 }
 
-$controller = new FacturaController();
+$controller = new RemisionController();
 
 // 1. Obtener el id_empresa del parámetro GET
 $id_empresa = isset($_GET['id_empresa']) ? intval($_GET['id_empresa']) : null;
@@ -20,7 +20,7 @@ if (empty($id_empresa)) {
 }
 
 // 2. Llamar al controlador y devolver la respuesta JSON
-$response = $controller->obtenerSiguienteNumeroFactura($id_empresa);
+$response = $controller->obtenerSiguienteNumeroRemision($id_empresa);
 
 echo json_encode($response);
 ?>

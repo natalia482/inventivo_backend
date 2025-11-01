@@ -3,14 +3,14 @@ header("Access-Control-Allow-Origin: *");
 header("Content-Type: application/json");
 
 require_once '../../config/Conexion.php';
-require_once '../../controllers/FacturaController.php';
+require_once '../../controllers/RemisionController.php';
 
 $db = (new Database())->getConnection();
-$controller = new FacturaController($db);
+$controller = new RemisionController($db);
 
 if (isset($_GET['id'])) {
-    $factura = $controller->obtenerFactura($_GET['id']);
-    echo json_encode($factura);
+    $Remision = $controller->obtenerRemision($_GET['id']);
+    echo json_encode($Remision);
 } else {
     echo json_encode(["success" => false, "message" => "Falta el parámetro id"]);
 }

@@ -1,14 +1,11 @@
 <?php
-header("Access-Control-Allow-Origin: *");
-header("Access-Control-Allow-Methods: GET, POST, OPTIONS, PUT, DELETE");
-header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With");
-header("Access-Control-Allow-Credentials: true");
-
+include_once '../../config/cors.php';
 include_once '../../config/conexion.php';
 include_once '../../models/Usuario.php';
 
 $database = new Database();
 $db = $database->getConnection();
+$db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
 $data = json_decode(file_get_contents("php://input"));
 
@@ -38,7 +35,9 @@ if ($resultado && !isset($resultado["error"])) {
             "apellido" => $resultado['apellido'],
             "correo" => $resultado['correo'],
             "rol" => $resultado['rol'],
-            "id_empresa" => $resultado['id_empresa'],        ]
+            "id_sede" => $resultado['id_sede'],         // Devuelve id_sede
+            "id_empresa" => $resultado['id_empresa']   // Devuelve id_empresa (obtenido del JOIN)
+        ]
     ]);
 } else {
     echo json_encode(["success" => false, "message" => "Correo o contraseña incorrectos."]);

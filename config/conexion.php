@@ -16,6 +16,10 @@ class Database {
                 $this->password
             );
             $this->conn->exec("set names utf8mb4");
+            
+            // CORRECCIÓN: Habilitar excepciones de PDO
+            $this->conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION); 
+
         } catch(PDOException $exception) {
             echo json_encode(["success" => false, "message" => "Error de conexión: " . $exception->getMessage()]);
             exit;

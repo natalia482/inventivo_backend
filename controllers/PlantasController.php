@@ -9,29 +9,21 @@ class PlantaController {
     }
 
     public function agregar() {
-        //  Lee el cuerpo JSON correctamente
         $data = json_decode(file_get_contents("php://input"), true);
+        if (!$data) { /* ... manejo de error ... */ }
 
-        if (!$data) {
-            echo json_encode([
-                "success" => false,
-                "message" => "No se recibieron datos válidos"
-            ]);
-            return;
-        }
-
-        //  Valida los campos requeridos
+        // Campos requeridos (ahora incluye id_sede)
         $nombre_plantas = $data["nombre_plantas"] ?? null;
         $numero_bolsa = $data["numero_bolsa"] ?? null;
         $precio = $data["precio"] ?? null;
         $categoria = $data["categoria"] ?? null;
         $stock = $data["stock"] ?? null;
-        $id_empresa = $data["id_empresa"] ?? null;
+        $id_sede = $data["id_sede"] ?? null; // Modificado
 
-        if (!$nombre_plantas || !$numero_bolsa || !$precio || !$categoria || !$stock || !$id_empresa) {
+        if (!$nombre_plantas || !$precio || !$stock || !$id_sede) { // Modificado
             echo json_encode([
                 "success" => false,
-                "message" => "Faltan datos obligatorios"
+                "message" => "Faltan datos obligatorios (incluyendo id_sede)"
             ]);
             return;
         }
@@ -42,7 +34,7 @@ class PlantaController {
             $precio,
             $categoria,
             $stock,
-            $id_empresa
+            $id_sede // Modificado
         );
 
         echo json_encode([
@@ -55,47 +47,35 @@ class PlantaController {
     public function actualizar() {
         $data = json_decode(file_get_contents("php://input"), true);
 
-        if (!$data) {
-            echo json_encode(["success" => false, "message" => "No se recibieron datos válidos"]);
-            return;
-        }
-
         $id = $data["id"] ?? null;
-        $nombre_plantas = $data["nombre_plantas"] ?? null;
-        $numero_bolsa = $data["numero_bolsa"] ?? null;
-        $precio = $data["precio"] ?? null;
-        $categoria = $data["categoria"] ?? null;
-        $stock = $data["stock"] ?? null;
+        $id_sede = $data["id_sede"] ?? null; // Requerido para el WHERE
+        // ... (otros campos)
         $estado = $data["estado"] ?? "disponible";
 
-        if (!$id) {
-            echo json_encode(["success" => false, "message" => "Falta el ID de la planta"]);
+        if (!$id || !$id_sede) { // Modificado
+            echo json_encode(["success" => false, "message" => "Falta el ID de la planta o ID de la Sede"]);
             return;
         }
 
         $resultado = $this->model->actualizar(
             $id,
-            $nombre_plantas,
-            $numero_bolsa,
-            $precio,
-            $categoria,
-            $stock,
-            $estado
+            $data["nombre_plantas"] ?? '',
+            $data["numero_bolsa"] ?? '',
+            $data["precio"] ?? 0,
+            $data["categoria"] ?? '',
+            $data["stock"] ?? 0,
+            $estado,
+            $id_sede // Modificado
         );
-
-        echo json_encode([
-            "success" => $resultado,
-            "message" => $resultado ? "Planta actualizada correctamente" : "Error al actualizar planta"
-        ]);
+        // ... (respuesta json)
     }
 
-    public function listar($id_empresa, $filtro = null) {
-      return $this->model->listar($id_empresa, $filtro);
+    public function listar($id_sede, $filtro = null) { // Modificado
+      return $this->model->listar($id_sede, $filtro); // Modificado
     }
 
-  // Aquí corregimos el método eliminar
     public function eliminar($id) {
         return $this->model->eliminar($id);
     }
-
 }
+?>

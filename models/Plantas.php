@@ -7,18 +7,21 @@ class Planta {
     public function __construct() {
         $database = new Database();
         $this->conn = $database->getConnection();
+        // Aseguramos que la conexión lance excepciones
+        $this->conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION); 
     }
 
-    //  Agregar planta
-    public function agregar($nombre_plantas, $numero_bolsa, $precio, $categoria, $stock, $id_empresa) {
-        $query = "INSERT INTO plantas (nombre_plantas, numero_bolsa, precio, categoria, stock, id_empresa, estado, fecha_creacion)
+    // Agregar planta (ahora usa id_sede)
+    public function agregar($nombre_plantas, $numero_bolsa, $precio, $categoria, $stock, $id_sede) {
+        $query = "INSERT INTO plantas (nombre_plantas, numero_bolsa, precio, categoria, stock, id_sede, estado, fecha_creacion)
                   VALUES (?, ?, ?, ?, ?, ?, 'disponible', NOW())";
         $stmt = $this->conn->prepare($query);
-        return $stmt->execute([$nombre_plantas, $numero_bolsa, $precio, $categoria, $stock, $id_empresa]);
+        // El id_sede es el 6to parámetro
+        return $stmt->execute([$nombre_plantas, $numero_bolsa, $precio, $categoria, $stock, $id_sede]);
     }
 
-    //Actualizar plantas
-    public function actualizar($id, $nombre_plantas, $numero_bolsa, $precio, $categoria, $stock, $estado) {
+    // Actualizar plantas (ahora usa id_sede)
+    public function actualizar($id, $nombre_plantas, $numero_bolsa, $precio, $categoria, $stock, $estado, $id_sede) {
         $query = "UPDATE plantas 
                 SET nombre_plantas = :nombre_plantas,
                     numero_bolsa = :numero_bolsa,
@@ -26,7 +29,7 @@ class Planta {
                     categoria = :categoria,
                     stock = :stock,
                     estado = :estado
-                WHERE id = :id";
+                WHERE id = :id AND id_sede = :id_sede"; // Aseguramos que solo edite en su sede
 
         $stmt = $this->conn->prepare($query);
 
@@ -37,28 +40,30 @@ class Planta {
         $stmt->bindParam(":categoria", $categoria);
         $stmt->bindParam(":stock", $stock);
         $stmt->bindParam(":estado", $estado);
+        $stmt->bindParam(":id_sede", $id_sede); // Binding de id_sede
 
         return $stmt->execute();
     }
 
-    public function listar($id_empresa, $filtro = null) {
+    // Listar plantas (ahora usa id_sede)
+    public function listar($id_sede, $filtro = null) {
         if ($filtro) {
             $query = "SELECT id, nombre_plantas, numero_bolsa, precio, categoria, stock, estado, fecha_creacion 
                     FROM plantas 
-                    WHERE id_empresa = :id_empresa 
+                    WHERE id_sede = :id_sede 
                     AND (nombre_plantas LIKE :filtro OR categoria LIKE :filtro)
                     ORDER BY fecha_creacion DESC";
             $stmt = $this->conn->prepare($query);
             $likeFiltro = "%" . $filtro . "%";
-            $stmt->bindParam(':id_empresa', $id_empresa);
+            $stmt->bindParam(':id_sede', $id_sede);
             $stmt->bindParam(':filtro', $likeFiltro);
         } else {
             $query = "SELECT id, nombre_plantas, numero_bolsa, precio, categoria, stock, estado, fecha_creacion 
                     FROM plantas 
-                    WHERE id_empresa = :id_empresa 
+                    WHERE id_sede = :id_sede 
                     ORDER BY fecha_creacion DESC";
             $stmt = $this->conn->prepare($query);
-            $stmt->bindParam(':id_empresa', $id_empresa);
+            $stmt->bindParam(':id_sede', $id_sede);
         }
 
         $stmt->execute();
@@ -71,7 +76,7 @@ class Planta {
         }
     }
 
-    // Eliminación lógica (cambiar estado)
+    // Eliminación física (no requiere id_sede si el ID es único globalmente)
     public function eliminar($id) {
         $query = "DELETE FROM plantas WHERE id = :id";
         $stmt = $this->conn->prepare($query);
