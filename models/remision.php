@@ -4,7 +4,7 @@ class Remision {
     private $table_name = "remisiones"; // Tabla renombrada
 
     public $id;
-    public $numero_Remision;
+    public $numero_Remision; // Este campo en PHP sigue siendo un nombre interno
     public $id_sede; // Modificado
     public $id_vendedor;
     public $fecha_emision;
@@ -16,7 +16,9 @@ class Remision {
 
     // Obtiene el siguiente número basado en la sede
     public function obtenerSiguienteNumeroRemision($id_sede) { 
-        $query = "SELECT MAX(CAST(numero_Remision AS UNSIGNED)) as ultimo_numero 
+        // ✅ CORRECCIÓN: Se usa la columna exacta de la DB: 'numero_remision' 
+        // y CAST(X AS UNSIGNED) para forzar la lectura secuencial de los números.
+        $query = "SELECT MAX(CAST(numero_remision AS UNSIGNED)) as ultimo_numero 
                   FROM remisiones 
                   WHERE id_sede = :id_sede"; // Filtrado por sede
         $stmt = $this->conn->prepare($query);
@@ -24,6 +26,8 @@ class Remision {
         $stmt->execute();
         $resultado = $stmt->fetch(PDO::FETCH_ASSOC);
         $ultimoNumero = $resultado['ultimo_numero'];
+        
+        // Si no hay remisiones, devuelve 1; de lo contrario, devuelve el siguiente.
         return ($ultimoNumero === null || $ultimoNumero === 0) ? 1 : $ultimoNumero + 1;
     }
 
@@ -54,11 +58,12 @@ class Remision {
             }
 
             // Insertar remisión
-            $query = "INSERT INTO remisiones (numero_Remision, id_sede, id_vendedor, total, fecha_emision) 
-                      VALUES (:numero_Remision, :id_sede, :id_vendedor, :total, NOW())"; 
+            // ✅ CORRECCIÓN: Usamos la columna exacta de la DB: 'numero_remision'
+            $query = "INSERT INTO remisiones (numero_remision, id_sede, id_vendedor, total, fecha_emision) 
+                      VALUES (:numero_remision, :id_sede, :id_vendedor, :total, NOW())"; 
             $stmt = $this->conn->prepare($query);
             $stmt->execute([
-                ":numero_Remision" => $numero_final,
+                ":numero_remision" => $numero_final,
                 ":id_sede" => $id_sede, 
                 ":id_vendedor" => $id_vendedor,
                 ":total" => $total
@@ -71,7 +76,8 @@ class Remision {
             }
 
             $this->conn->commit();
-            return ["success" => true, "message" => "Remisión creada exitosamente", "id_Remision" => $idRemision, "numero_Remision" => strval($numero_final)];
+            // Aseguramos que el valor de retorno para Flutter use el nombre correcto
+            return ["success" => true, "message" => "Remisión creada exitosamente", "id_Remision" => $idRemision, "numero_factura" => strval($numero_final)];
 
         } catch (Exception $e) {
             $this->conn->rollBack();

@@ -18,7 +18,18 @@ $id = $data->id;
 $updateFields = [];
 $params = [];
 
-// ... (Preparamos los campos a actualizar: nombre, apellido, correo, password, etc.)
+if (!empty($data->nombre)) {
+    $updateFields[] = "nombre = :nombre";
+    $params[':nombre'] = $data->nombre;
+}
+if (!empty($data->apellido)) {
+    $updateFields[] = "apellido = :apellido";
+    $params[':apellido'] = $data->apellido;
+}
+if (!empty($data->correo)) {
+    $updateFields[] = "correo = :correo";
+    $params[':correo'] = $data->correo;
+}
 
 if (empty($updateFields)) {
     echo json_encode(["success" => false, "message" => "No hay campos para actualizar."]);
