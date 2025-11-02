@@ -1,9 +1,9 @@
 <?php
 class Database {
     private $host = "localhost";
-    private $db_name = "bd_inventivo";
-    private $username = "root";
-    private $password = "";
+    private $db_name = "u853019229_inventivo_db";
+    private $username = "u853019229_inventivo_user";
+    private $password = "Inventivo123";
     public $conn;
 
     public function getConnection() {
