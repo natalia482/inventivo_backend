@@ -1,11 +1,7 @@
 <?php
-header("Access-Control-Allow-Origin: *");
-header("Access-Control-Allow-Methods: POST, OPTIONS");
-header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With");
-header("Content-Type: application/json");
-
-include_once '../../config/conexion.php';
-include_once '../../models/insumo.php'; // Incluir modelo
+require_once '../config/cors.php'; // Habilitar CORS
+include_once '../config/conexion.php';
+include_once '../models/insumo.php'; // Incluir modelo
 
 $database = new Database();
 $db = $database->getConnection();

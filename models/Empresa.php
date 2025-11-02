@@ -5,7 +5,6 @@ class Empresa {
 
     public $id;
     public $nombre_empresa;
-    public $nit;
     public $direccion;
 
     public function __construct($db) {
@@ -15,12 +14,11 @@ class Empresa {
     public function crear() {
         // Query actualizado sin id_usuario
         $query = "INSERT INTO " . $this->table_name . " 
-                  (nombre_empresa, nit, direccion)
-                  VALUES (:nombre_empresa, :nit, :direccion)";
+                  (nombre_empresa, direccion)
+                  VALUES (:nombre_empresa, :direccion)";
         $stmt = $this->conn->prepare($query);
 
         $stmt->bindParam(":nombre_empresa", $this->nombre_empresa);
-        $stmt->bindParam(":nit", $this->nit);
         $stmt->bindParam(":direccion", $this->direccion);
 
         if ($stmt->execute()) {

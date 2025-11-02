@@ -1,6 +1,6 @@
 <?php
-require_once __DIR__ . '/../config/conexion.php';
-require_once __DIR__ . '/../models/remision.php'; // Modificado
+require_once  '../config/conexion.php';
+require_once '../models/remision.php'; // Modificado
 
 class RemisionController {
     private $db;
@@ -25,11 +25,14 @@ class RemisionController {
     public function agregarRemision($data) {
         $errores = [];
         
-        if (empty($data['id_sede'])) { // Modificado
+        if (empty($data['id_sede'])) { 
             $errores[] = "Falta id_sede";
         }
         if (empty($data['id_vendedor'])) {
             $errores[] = "Falta id_vendedor";
+        }
+        if (empty($data['id_usuario'])) { // Requerido para Auditoría
+            $errores[] = "Falta id_usuario para auditoría";
         }
         if (!isset($data['total']) || $data['total'] <= 0) {
             $errores[] = "Total inválido o falta";
@@ -37,7 +40,12 @@ class RemisionController {
         if (empty($data['detalles']) || !is_array($data['detalles'])) {
             $errores[] = "Faltan detalles de productos";
         }
-        
+        if (empty($data['nombre_cliente'])) {
+            $errores[] = "Falta nombre_cliente";
+        }
+        if (empty($data['telefono_cliente'])) {
+            $errores[] = "Falta telefono_cliente";
+        }
         if (!empty($errores)) {
             echo json_encode(["success" => false, "message" => "Faltan datos obligatorios: " . implode(", ", $errores)]);
             return;
@@ -45,10 +53,14 @@ class RemisionController {
 
         $resultado = $this->remision->crearRemision(
             $data['numero_Remision'] ?? '', 
-            $data['id_sede'], // Modificado
+            $data['id_sede'], 
             $data['id_vendedor'],
             $data['total'],
-            $data['detalles']
+            $data['detalles'],
+            $data['nombre_cliente'], 
+            $data['telefono_cliente'],
+            $data['id_usuario'],
+            
         );
 
         echo json_encode($resultado);
@@ -76,13 +88,18 @@ class RemisionController {
     }
 
     // Eliminar remisión
-    public function eliminarRemision($id) {
-        if (empty($id)) {
-            echo json_encode(["success" => false, "message" => "Falta el ID de la remisión"]);
+    public function eliminarRemision($id_remision_placeholder) {
+        $data = json_decode(file_get_contents("php://input"), true);
+        $id = $data['id'] ?? null;
+        $id_usuario = $data['id_usuario'] ?? null;
+        $id_sede = $data['id_sede'] ?? null;
+
+        if (empty($id) || empty($id_usuario) || empty($id_sede)) {
+            echo json_encode(["success" => false, "message" => "Faltan IDs de la remisión o IDs de auditoría."]);
             return;
         }
 
-        $resultado = $this->remision->eliminar($id);
+        $resultado = $this->remision->eliminar($id, $id_usuario, $id_sede); 
 
         if ($resultado === true) {
             echo json_encode(["success" => true, "message" => "Remisión eliminada correctamente"]);

@@ -1,7 +1,7 @@
 <?php
-require_once '../../config/cors.php';
-require_once '../../config/conexion.php'; 
-require_once '../../controllers/remisionController.php'; // Modificado
+require_once '../config/cors.php';
+require_once '../config/conexion.php'; 
+require_once '../controllers/remisionController.php'; // Modificado
 
 $controller = new RemisionController(); 
 

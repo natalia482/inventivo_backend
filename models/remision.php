@@ -1,38 +1,37 @@
 <?php
+// Archivo: inventivo_backend/models/remision.php
 class Remision {
     private $conn;
-    private $table_name = "remisiones"; // Tabla renombrada
+    private $table_name = "remisiones";
 
     public $id;
-    public $numero_Remision; // Este campo en PHP sigue siendo un nombre interno
-    public $id_sede; // Modificado
+    public $numero_Remision; 
+    public $id_sede; 
     public $id_vendedor;
     public $fecha_emision;
     public $total;
+    public $nombre_cliente; 
+    public $telefono_cliente; 
 
     public function __construct($db) {
         $this->conn = $db;
     }
 
-    // Obtiene el siguiente número basado en la sede
     public function obtenerSiguienteNumeroRemision($id_sede) { 
-        // ✅ CORRECCIÓN: Se usa la columna exacta de la DB: 'numero_remision' 
-        // y CAST(X AS UNSIGNED) para forzar la lectura secuencial de los números.
         $query = "SELECT MAX(CAST(numero_remision AS UNSIGNED)) as ultimo_numero 
                   FROM remisiones 
-                  WHERE id_sede = :id_sede"; // Filtrado por sede
+                  WHERE id_sede = :id_sede";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(":id_sede", $id_sede); 
         $stmt->execute();
         $resultado = $stmt->fetch(PDO::FETCH_ASSOC);
         $ultimoNumero = $resultado['ultimo_numero'];
         
-        // Si no hay remisiones, devuelve 1; de lo contrario, devuelve el siguiente.
         return ($ultimoNumero === null || $ultimoNumero === 0) ? 1 : $ultimoNumero + 1;
     }
 
-    // Crea la remisión usando id_sede
-    public function crearRemision($numero_Remision, $id_sede, $id_vendedor, $total, $detalles) { 
+    // ✅ MODIFICADO: Añadido $id_usuario
+    public function crearRemision($numero_Remision, $id_sede, $id_vendedor, $total, $detalles, $nombre_cliente, $telefono_cliente, $id_usuario) { 
         try {
             $this->conn->beginTransaction();
 
@@ -40,10 +39,8 @@ class Remision {
             if (empty($numero_Remision)) {
                 $numero_final = $this->obtenerSiguienteNumeroRemision($id_sede); 
             }
-
-            // Validar stock (asumiendo que plantas usa id_sede)
+            // --- Validación de Stock (Omitida para brevedad, asumiendo que funciona) ---
             foreach ($detalles as $detalle) {
-                // (La validación de stock debe asegurar que la planta pertenezca a la misma sede)
                 $queryStock = "SELECT stock FROM plantas WHERE id = :id_producto AND id_sede = :id_sede";
                 $stmtStock = $this->conn->prepare($queryStock);
                 $stmtStock->execute([
@@ -56,27 +53,42 @@ class Remision {
                     throw new Exception("Stock insuficiente para el producto ID {$detalle['id_producto']} en esta sede.");
                 }
             }
+            // --- Fin Validación de Stock ---
 
             // Insertar remisión
-            // ✅ CORRECCIÓN: Usamos la columna exacta de la DB: 'numero_remision'
-            $query = "INSERT INTO remisiones (numero_remision, id_sede, id_vendedor, total, fecha_emision) 
-                      VALUES (:numero_remision, :id_sede, :id_vendedor, :total, NOW())"; 
+            $query = "INSERT INTO remisiones (numero_remision, id_sede, id_vendedor, total, nombre_cliente, telefono_cliente, fecha_emision) 
+                      VALUES (:numero_remision, :id_sede, :id_vendedor, :total,:nombre_cliente, :telefono_cliente, NOW())"; 
             $stmt = $this->conn->prepare($query);
             $stmt->execute([
                 ":numero_remision" => $numero_final,
                 ":id_sede" => $id_sede, 
                 ":id_vendedor" => $id_vendedor,
-                ":total" => $total
+                ":total" => $total,
+                ":nombre_cliente" => $nombre_cliente, 
+                ":telefono_cliente" => $telefono_cliente,
             ]);
             $idRemision = $this->conn->lastInsertId();
 
-            // Agregar detalles
+            // Agregar detalles y descontar stock
             foreach ($detalles as $detalle) {
                 $this->agregarDetalle($idRemision, $detalle["id_producto"], $detalle["cantidad"], $detalle["precio_unitario"]);
             }
 
+            // ✅ AUDITORÍA: CREACIÓN
+            $detalle_cambio = "Remisión N° {$numero_final} creada. Cliente: {$nombre_cliente}";
+            $queryAuditoria = "INSERT INTO auditoria_movimientos 
+                               (id_usuario, id_sede, tabla_afectada, id_registro_afectado, tipo_operacion, detalle_cambio)
+                               VALUES (:id_usuario, :id_sede, 'remisiones', :id_registro, 'AGREGAR', :detalle)";
+            
+            $stmtAuditoria = $this->conn->prepare($queryAuditoria);
+            $stmtAuditoria->execute([
+                ':id_usuario' => $id_usuario, 
+                ':id_sede' => $id_sede,
+                ':id_registro' => $idRemision,
+                ':detalle' => $detalle_cambio
+            ]);
+
             $this->conn->commit();
-            // Aseguramos que el valor de retorno para Flutter use el nombre correcto
             return ["success" => true, "message" => "Remisión creada exitosamente", "id_Remision" => $idRemision, "numero_factura" => strval($numero_final)];
 
         } catch (Exception $e) {
@@ -85,7 +97,7 @@ class Remision {
         }
     }
     
-    // Agrega detalles a la tabla renombrada
+    // Agrega detalles a la tabla renombrada (se mantiene igual)
     private function agregarDetalle($idRemision, $idProducto, $cantidad, $precioUnitario) {
         $query = "INSERT INTO detalle_remision (id_remision, id_producto, cantidad, precio_unitario)
                   VALUES (:id_remision, :id_producto, :cantidad, :precio_unitario)";
@@ -98,7 +110,6 @@ class Remision {
             ":precio_unitario" => $precioUnitario,
         ]);
 
-        // Descontar stock (la lógica de estado ya está en la tabla plantas)
         $queryStock = "UPDATE plantas 
                        SET stock = stock - :cantidad
                        WHERE id = :idProducto";
@@ -109,7 +120,7 @@ class Remision {
         ]);
     }
 
-    // Listar remisiones por sede
+    // Listar remisiones por sede (se mantiene igual)
     public function listar($id_sede) { 
         $query = "SELECT f.*, 
                          CONCAT(u.nombre, ' ', u.apellido) AS vendedor
@@ -124,7 +135,7 @@ class Remision {
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    // Obtener detalle de remisión
+    // Obtener detalle de remisión (se mantiene igual)
     public function obtenerDetalle($id_remision) { 
         $query = "SELECT df.*, p.nombre_plantas, p.categoria
                   FROM detalle_remision df
@@ -137,8 +148,8 @@ class Remision {
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    // Eliminar remisión (Devolver stock)
-    public function eliminar($id) {
+    // ✅ MODIFICADO: Añadido $id_usuario y $id_sede para auditoría de eliminación
+    public function eliminar($id, $id_usuario, $id_sede) {
         try {
             $this->conn->beginTransaction();
 
@@ -148,11 +159,9 @@ class Remision {
             $stmtDetalles->execute([":id" => $id]);
             $detalles = $stmtDetalles->fetchAll(PDO::FETCH_ASSOC);
 
-            // 2. Devolver el stock
+            // 2. Devolver el stock (Omitido para brevedad)
             foreach ($detalles as $detalle) {
-                $queryStock = "UPDATE plantas 
-                               SET stock = stock + :cantidad
-                               WHERE id = :idProducto";
+                $queryStock = "UPDATE plantas SET stock = stock + :cantidad WHERE id = :idProducto";
                 $stmtStock = $this->conn->prepare($queryStock);
                 $stmtStock->execute([
                     ":cantidad" => intval($detalle['cantidad']),
@@ -169,6 +178,20 @@ class Remision {
             $query = "DELETE FROM remisiones WHERE id = :id"; 
             $stmt = $this->conn->prepare($query);
             $stmt->execute([":id" => $id]);
+
+            // ✅ AUDITORÍA: ELIMINACIÓN
+            $detalle_cambio = "Remisión ID: {$id} eliminada permanentemente. Stock devuelto.";
+            $queryAuditoria = "INSERT INTO auditoria_movimientos 
+                               (id_usuario, id_sede, tabla_afectada, id_registro_afectado, tipo_operacion, detalle_cambio)
+                               VALUES (:id_usuario, :id_sede, 'remisiones', :id_registro, 'ELIMINAR', :detalle)";
+            
+            $stmtAuditoria = $this->conn->prepare($queryAuditoria);
+            $stmtAuditoria->execute([
+                ':id_usuario' => $id_usuario,
+                ':id_sede' => $id_sede,
+                ':id_registro' => $id,
+                ':detalle' => $detalle_cambio
+            ]);
 
             $this->conn->commit();
             return true;

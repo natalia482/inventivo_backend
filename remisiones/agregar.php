@@ -1,7 +1,7 @@
 <?php
-require_once '../../config/cors.php';
-require_once '../../config/conexion.php'; 
-require_once '../../controllers/remisionController.php'; // Modificado
+require_once '../config/cors.php';
+require_once '../config/conexion.php'; 
+require_once '../controllers/remisionController.php'; // Modificado
     
 if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
     http_response_code(200);

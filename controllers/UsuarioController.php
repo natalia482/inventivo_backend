@@ -1,6 +1,6 @@
 <?php
-require_once "../../config/conexion.php";
-require_once "../../models/Usuario.php";
+require_once "../config/conexion.php";
+require_once "../models/Usuario.php";
 
 class UsuarioController {
     private $db;
@@ -43,8 +43,6 @@ class UsuarioController {
 
     //Login de usuario
     public function login($data) {
-    include_once "../../models/Usuario.php";
-    include_once "../../config/conexion.php";
 
         $database = new Database();
         $db = $database->getConnection();

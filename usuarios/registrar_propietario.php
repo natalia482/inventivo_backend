@@ -1,9 +1,9 @@
 <?php
-require_once '../../config/cors.php';
-require_once '../../config/conexion.php';
-require_once '../../models/Usuario.php';
-require_once '../../models/Empresa.php';
-require_once '../../models/sede.php'; 
+require_once '../config/cors.php';
+require_once '../config/conexion.php';
+require_once '../models/Usuario.php';
+require_once '../models/Empresa.php';
+require_once '../models/sede.php'; 
 
 if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
     http_response_code(200);
@@ -21,7 +21,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
     // Datos de la Empresa
     $nombre_empresa = $data['nombre_empresa'] ?? null;
-    $nit = $data['nit'] ?? null;
     
     // Datos de la Sede
     $direccion_sede = $data['direccion_empresa'] ?? null;
@@ -58,7 +57,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
         // 1. Crear la Empresa
         $empresa->nombre_empresa = $nombre_empresa;
-        $empresa->nit = $nit;
         $empresa->direccion = $direccion_sede;
         $empresa->crear();
         $id_empresa = $empresa->id;
@@ -69,7 +67,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $sede->direccion = $direccion_sede;
         $sede->latitud = $latitud;
         $sede->longitud = $longitud;
-        $sede->telefonos = $telefono_string; // ✅ CORRECCIÓN: ASIGNAR A LA PROPIEDAD PLURAL
+        $sede->telefonos = $telefono_string;
         $sede->crear();
         $id_sede = $sede->id;
 

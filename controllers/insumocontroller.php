@@ -1,5 +1,5 @@
 <?php
-require_once __DIR__ . '/../models/Insumo.php';
+require_once '../models/Insumo.php';
 
 class InsumoController {
     private $conn;

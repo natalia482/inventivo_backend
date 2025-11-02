@@ -1,6 +1,6 @@
 <?php
-require_once "../../../config/cors.php";
-include_once "../../../config/conexion.php";
+require_once "../../config/cors.php";
+include_once "../../config/conexion.php";
 
 
 if ($_SERVER["REQUEST_METHOD"] === "GET") {
@@ -19,7 +19,7 @@ if ($_SERVER["REQUEST_METHOD"] === "GET") {
     // MODIFICADO: Buscar por id_sede y excluir solo al Propietario
     $query = "SELECT id, nombre, apellido, correo, rol, estado, fecha_registro 
               FROM usuarios 
-              WHERE rol != 'PROPIETARIO' AND id_sede = :id_sede";
+              WHERE id_sede = :id_sede";
     
     if ($filtro) {
         $query .= " AND (nombre LIKE :filtro OR apellido LIKE :filtro OR correo LIKE :filtro)";

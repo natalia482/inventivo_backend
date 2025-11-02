@@ -9,7 +9,7 @@ class Usuario {
     public $correo;
     public $password;
     public $rol;
-    public $id_sede; // Modificado
+    public $id_sede;
 
     public function __construct($db) {
         $this->conn = $db;
@@ -26,7 +26,7 @@ class Usuario {
         $stmt->bindParam(":correo", $this->correo);
         $stmt->bindParam(":password", $this->password);
         $stmt->bindParam(":rol", $this->rol);
-        $stmt->bindParam(":id_sede", $this->id_sede); // Modificado
+        $stmt->bindParam(":id_sede", $this->id_sede); 
 
         if ($stmt->execute()) {
             $this->id = $this->conn->lastInsertId();
