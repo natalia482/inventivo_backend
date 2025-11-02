@@ -1,7 +1,7 @@
 <?php
-require_once("../../config/cors.php");
-require_once("../../config/conexion.php");
-require_once("../../controllers/RemisionController.php");
+require_once("../config/cors.php");
+require_once("../config/conexion.php");
+require_once("../controllers/RemisionController.php");
 
 if (!isset($_GET['id_remision'])) { 
     echo json_encode(["success" => false, "message" => "Falta id_remision"]);

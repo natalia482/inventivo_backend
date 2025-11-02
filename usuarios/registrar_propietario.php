@@ -1,9 +1,9 @@
 <?php
-require_once '../../config/cors.php';
-require_once '../../config/conexion.php';
-require_once '../../models/Usuario.php';
-require_once '../../models/Empresa.php';
-require_once '../../models/sede.php'; 
+require_once '../config/cors.php';
+require_once '../config/conexion.php';
+require_once '../models/Usuario.php';
+require_once '../models/Empresa.php';
+require_once '../models/sede.php'; 
 
 if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
     http_response_code(200);

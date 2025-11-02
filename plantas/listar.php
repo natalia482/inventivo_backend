@@ -1,7 +1,7 @@
 <?php
-include_once '../../config/cors.php';
-include_once '../../config/conexion.php';
-include_once '../../controllers/PlantasController.php';
+include_once '../config/cors.php';
+include_once '../config/conexion.php';
+include_once '../controllers/PlantasController.php';
 
 $database = new Database();
 $db = $database->getConnection();

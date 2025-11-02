@@ -2,8 +2,8 @@
 header("Access-Control-Allow-Origin: *");
 header("Content-Type: application/json");
 
-require_once '../../config/Conexion.php';
-require_once '../../controllers/RemisionController.php';
+require_once '../config/Conexion.php';
+require_once '../controllers/RemisionController.php';
 
 $db = (new Database())->getConnection();
 $controller = new RemisionController($db);

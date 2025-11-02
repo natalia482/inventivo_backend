@@ -1,7 +1,7 @@
 <?php
-require_once '../../config/cors.php';
-require_once '../../config/conexion.php';
-require_once '../../models/Plantas.php';  
+require_once '../config/cors.php';
+require_once '../config/conexion.php';
+require_once '../models/Plantas.php';  
 
 $database = new Database();
 $db = $database->getConnection();

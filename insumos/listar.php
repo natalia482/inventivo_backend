@@ -1,7 +1,7 @@
 <?php
-require_once '../../config/cors.php'; // Habilitar CORS
-include_once '../../config/conexion.php';
-include_once '../../models/insumo.php'; // Incluir el modelo
+require_once '../config/cors.php'; // Habilitar CORS
+include_once '../config/conexion.php';
+include_once '../models/insumo.php'; // Incluir el modelo
 
 $database = new Database();
 $db = $database->getConnection();

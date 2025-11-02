@@ -1,6 +1,6 @@
 <?php
-require_once '../../controllers/RemisionController.php';
-require_once '../../config/cors.php';
+require_once '../controllers/RemisionController.php';
+require_once '../config/cors.php';
 
 // Intenta leer el ID del cuerpo JSON (usado por Flutter http.post)
 $data = json_decode(file_get_contents("php://input"), true);

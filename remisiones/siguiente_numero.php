@@ -1,7 +1,7 @@
 <?php
-require_once '../../config/conexion.php';
-require_once '../../config/cors.php';
-require_once '../../controllers/RemisionController.php';
+require_once '../config/conexion.php';
+require_once '../config/cors.php';
+require_once '../controllers/RemisionController.php';
 
 // Manejar preflight OPTIONS (si es necesario para navegadores)
 if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {

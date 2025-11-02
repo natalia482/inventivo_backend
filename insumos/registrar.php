@@ -1,7 +1,7 @@
 <?php
-require '../../config/cors.php';
+require '../config/cors.php';
 require_once __DIR__ . '/../../config/conexion.php';
-require_once __DIR__ . '/../../models/insumo.php'; 
+require_once __DIR__ . '/../models/insumo.php'; 
 
 $database = new Database();
 $db = $database->getConnection();

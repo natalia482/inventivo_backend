@@ -1,6 +1,6 @@
 <?php
-require_once "../../..config/cors.php";
-include_once "../../config/conexion.php";
+require_once "../..config/cors.php";
+include_once "../config/conexion.php";
 
 $database = new Database();
 $conexion = $database->getConnection();

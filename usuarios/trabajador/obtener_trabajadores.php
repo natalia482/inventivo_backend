@@ -1,6 +1,6 @@
 <?php
-require_once "../../../config/cors.php";
-include_once "../../../config/conexion.php";
+require_once "../../config/cors.php";
+include_once "../../config/conexion.php";
 
 
 if ($_SERVER["REQUEST_METHOD"] === "GET") {
