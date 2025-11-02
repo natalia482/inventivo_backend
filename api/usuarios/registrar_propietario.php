@@ -23,20 +23,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $nombre_empresa = $data['nombre_empresa'] ?? null;
     $nit = $data['nit'] ?? null;
     
-    // Datos de la Sede (Usamos la dirección de la empresa)
+    // Datos de la Sede
     $direccion_sede = $data['direccion_empresa'] ?? null;
     $latitud = $data['latitud'] ?? null;
     $longitud = $data['longitud'] ?? null;
+    
+    // ✅ CORRECCIÓN: Obtener números de teléfono (la clave del front es 'telefonos')
+    $telefonos_input = $data['telefonos'] ?? null;
+    $telefono_string = ''; // Variable para almacenar la cadena de texto
+
+    // Formatear los números (asumiendo que vienen de Flutter como string separado por comas)
+    if (is_array($telefonos_input)) {
+        $telefono_string = implode(', ', array_filter($telefonos_input));
+    } elseif (is_string($telefonos_input)) {
+        $telefono_string = $telefonos_input;
+    }
 
 
-    if (!$nombre || !$apellido || !$correo || !$password || !$nombre_empresa || !$nit) {
+    if (!$nombre || !$apellido || !$correo || !$password || !$nombre_empresa) {
         echo json_encode(["success" => false, "message" => "Faltan datos obligatorios."]);
         exit;
     }
 
     $database = new Database();
     $db = $database->getConnection();
-    $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION); // Habilitar excepciones
+    $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
     $usuario = new Usuario($db);
     $empresa = new Empresa($db);
@@ -48,7 +59,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // 1. Crear la Empresa
         $empresa->nombre_empresa = $nombre_empresa;
         $empresa->nit = $nit;
-        $empresa->direccion = $direccion_sede; // Asumimos que la dirección de la empresa es la de la sede principal
+        $empresa->direccion = $direccion_sede;
         $empresa->crear();
         $id_empresa = $empresa->id;
 
@@ -58,6 +69,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $sede->direccion = $direccion_sede;
         $sede->latitud = $latitud;
         $sede->longitud = $longitud;
+        $sede->telefonos = $telefono_string; // ✅ CORRECCIÓN: ASIGNAR A LA PROPIEDAD PLURAL
         $sede->crear();
         $id_sede = $sede->id;
 
