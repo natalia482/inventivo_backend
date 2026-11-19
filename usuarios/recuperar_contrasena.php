@@ -1,10 +1,7 @@
 <?php
-// Archivo: inventivo_backend/usuarios/recuperar_contrasena.php (CORREGIDO)
 require '../config/cors.php';
 require '../config/conexion.php';
 
-// ✅ Asegúrate que estas rutas sean correctas para tu instalación de PHPMailer
-// Si usas Composer, probablemente solo necesitas 'vendor/autoload.php'
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\SMTP;
 use PHPMailer\PHPMailer\Exception;

@@ -4,7 +4,7 @@
 // Permitir acceso desde cualquier origen (*)
 header("Access-Control-Allow-Origin: *");
 // Permitir los métodos HTTP utilizados (GET, POST, OPTIONS)
-header("Access-Control-Allow-Methods: GET, POST, OPTIONS, DELETE");
+header("Access-Control-Allow-Methods: GET, POST, PUT, OPTIONS, DELETE");
 // Permitir los encabezados que Flutter/navegador pueden enviar
 header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With");
 
