@@ -1,5 +1,5 @@
 <?php
-require_once '../controllers/RemisionController.php';
+require_once '../controllers/remisionController.php';
 require_once '../config/cors.php';
 
 $controller = new RemisionController();

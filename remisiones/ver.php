@@ -1,7 +1,7 @@
 <?php
 require_once '../config/cors.php';
 require_once '../config/Conexion.php';
-require_once '../controllers/RemisionController.php';
+require_once '../controllers/remisionController.php';
 
 $db = (new Database())->getConnection();
 $controller = new RemisionController($db);
